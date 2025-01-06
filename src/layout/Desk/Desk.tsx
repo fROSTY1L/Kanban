@@ -8,6 +8,7 @@ import { DndContext, DragEndEvent } from "@dnd-kit/core";
 import { useSelector } from "react-redux";
 import { RootState } from "../../store";
 import { formatUnixTime } from '../../utils/dateUtils';
+import { generateUniqueId } from '../../utils/idGenerator';
 
 const TASKS_STORAGE_KEY = 'kanban_tasks';
 
@@ -93,7 +94,7 @@ const Desk = () => {
 
   const addTask = (type: string) => {
     const newTask: TaskProps = {
-      id: tasks.length + 1,
+      id: generateUniqueId(tasks),
       type: type,
       startDay: Date.now(),
       endDay: Date.now() + 86400000,
