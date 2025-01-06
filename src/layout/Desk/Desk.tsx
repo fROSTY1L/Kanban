@@ -26,7 +26,7 @@ const Desk = () => {
   }, [setIsEditing]);
 
   const saveTasks = useCallback((updatedTasks: TaskProps[]) => {
-    const tasksToStore = updatedTasks.map(({ setIsEditing, onUpdate, ...task }) => task);
+    const tasksToStore = updatedTasks.map(({ ...task }) => task);
     localStorage.setItem(TASKS_STORAGE_KEY, JSON.stringify(tasksToStore));
   }, []);
 
