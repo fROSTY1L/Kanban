@@ -25,7 +25,6 @@ const Desk = () => {
     }
   }, [setIsEditing]);
 
-  // Сохраняем задачи в localStorage при изменении
   useEffect(() => {
     if (tasks.length > 0) {
       const tasksToStore = tasks.map(({ ...task }) => task);
