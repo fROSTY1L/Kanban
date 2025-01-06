@@ -19,7 +19,7 @@ const Desk = () => {
   useEffect(() => {
     const storedTasks = localStorage.getItem(TASKS_STORAGE_KEY);
     if (storedTasks) {
-      setTasks(JSON.parse(storedTasks).map(task => ({ ...task, setIsEditing })));
+      setTasks(JSON.parse(storedTasks).map((task: TaskProps) => ({ ...task, setIsEditing })));
     } else {
       setTasks(tasksData.map(task => ({ ...task, setIsEditing })));
     }
@@ -28,7 +28,7 @@ const Desk = () => {
   // Сохраняем задачи в localStorage при изменении
   useEffect(() => {
     if (tasks.length > 0) {
-      const tasksToStore = tasks.map(({ setIsEditing, ...task }) => task);
+      const tasksToStore = tasks.map(({ ...task }) => task);
       localStorage.setItem(TASKS_STORAGE_KEY, JSON.stringify(tasksToStore));
     }
   }, [tasks]);
