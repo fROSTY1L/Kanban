@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import Card from "../../components/Desk/Card";
 import Task, { TaskProps } from "../../components/Desk/Task";
 import { Wrap } from "../../styles/Desk/Desk.style";
@@ -25,14 +25,21 @@ const Desk = () => {
     }
   }, [setIsEditing]);
 
-  useEffect(() => {
-    if (tasks.length > 0) {
-      const tasksToStore = tasks.map(({ ...task }) => task);
-      localStorage.setItem(TASKS_STORAGE_KEY, JSON.stringify(tasksToStore));
-    }
-  }, [tasks]);
+  const saveTasks = useCallback((updatedTasks: TaskProps[]) => {
+    const tasksToStore = updatedTasks.map(({ setIsEditing, onUpdate, ...task }) => task);
+    localStorage.setItem(TASKS_STORAGE_KEY, JSON.stringify(tasksToStore));
+  }, []);
 
-  // Функция фильтрации задач по поисковому запросу
+  const handleTaskUpdate = useCallback((taskId: number, updates: Partial<TaskProps>) => {
+    setTasks(prevTasks => {
+      const updatedTasks = prevTasks.map(task => 
+        task.id === taskId ? { ...task, ...updates } : task
+      );
+      saveTasks(updatedTasks);
+      return updatedTasks;
+    });
+  }, [saveTasks]);
+
   const filterTasks = (tasks: TaskProps[], type: string) => {
     return tasks
       .filter(task => task.type === type)
@@ -60,25 +67,28 @@ const Desk = () => {
     const overId = over.id as string;
     const draggedTask = tasks.find(task => task.id === Number(taskId));
 
-    // Проверяем, если перетаскиваемый элемент над зоной удаления
     if (overId === 'delete-zone') {
         if (draggedTask && draggedTask.type === 'done') {
-            // Удаляем задачу, если она из столбца Done
-            setTasks(prevTasks => prevTasks.filter(task => task.id !== draggedTask.id));
+            const updatedTasks = tasks.filter(task => task.id !== draggedTask.id);
+            setTasks(updatedTasks);
+            saveTasks(updatedTasks);
         }
         return;
     }
 
-    // Если не в зоне удаления, обрабатываем перемещение между столбцами
-    setTasks(prevTasks => prevTasks.map(task => 
+    const updatedTasks = tasks.map(task => 
         task.id === Number(taskId) 
             ? { ...task, type: overId } 
             : task
-    ));
+    );
+    setTasks(updatedTasks);
+    saveTasks(updatedTasks);
   };
 
   const handleDeleteAllDone = () => {
-    setTasks(tasks => tasks.filter(task => task.type !== 'done'));
+    const updatedTasks = tasks.filter(task => task.type !== 'done');
+    setTasks(updatedTasks);
+    saveTasks(updatedTasks);
   };
 
   const addTask = (type: string) => {
@@ -88,10 +98,12 @@ const Desk = () => {
       startDay: Date.now(),
       endDay: Date.now() + 86400000,
       text: 'Новая задача',
-      setIsEditing: setIsEditing
+      setIsEditing
     };
 
-    setTasks([...tasks, newTask]);
+    const updatedTasks = [...tasks, newTask];
+    setTasks(updatedTasks);
+    saveTasks(updatedTasks);
   };
 
   return (
@@ -102,18 +114,27 @@ const Desk = () => {
             <Task 
               key={task.id} 
               {...task} 
-              editButton={true} 
+              editButton={true}
+              onUpdate={handleTaskUpdate}
             />
           ))}
         </Card>
         <Card id={'in_progress'} title="In progress" icon={todoIcon}>
           {filterTasks(tasks, 'in_progress').map(task => 
-            <Task key={task.id} {...task} />
+            <Task 
+              key={task.id} 
+              {...task}
+              onUpdate={handleTaskUpdate}
+            />
           )}
         </Card>
         <Card id={'review'} title="Review" icon={todoIcon}>
           {filterTasks(tasks, 'review').map(task => 
-            <Task key={task.id} {...task} />
+            <Task 
+              key={task.id} 
+              {...task}
+              onUpdate={handleTaskUpdate}
+            />
           )}
         </Card>
         <Card 
@@ -124,7 +145,11 @@ const Desk = () => {
           onDeleteAll={handleDeleteAllDone}
         >
           {filterTasks(tasks, 'done').map(task => 
-            <Task key={task.id} {...task} />
+            <Task 
+              key={task.id} 
+              {...task}
+              onUpdate={handleTaskUpdate}
+            />
           )}
         </Card>
       </DndContext>

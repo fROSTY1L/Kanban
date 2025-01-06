@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Row, Title, Value, Wrap, ButtonRow, TextArea, Input } from "../../styles/Desk/Task.style";
 import EditButton from "./EditButton";
 import { useDraggable } from '@dnd-kit/core';
@@ -8,7 +8,6 @@ import crossIcon from '../../assets/Desk/cross.png';
 import checkIcon from '../../assets/Desk/check.png';
 import { formatUnixTime, parseDate } from '../../utils/dateUtils';
 
-
 export interface TaskProps {
     id: number;
     type: string | number;
@@ -17,6 +16,7 @@ export interface TaskProps {
     text: string;
     editButton?: boolean;
     setIsEditing: (isEditing: boolean) => void;
+    onUpdate?: (taskId: number, updates: Partial<TaskProps>) => void;
 }
 
 const Task = (props: TaskProps) => {
@@ -25,13 +25,18 @@ const Task = (props: TaskProps) => {
     const [endDate, setEndDate] = useState(formatUnixTime(props.endDay));
     const [description, setDescription] = useState(props.text);
 
-    // Проверяем, прошла ли дата окончания
+    // Update local state when props change
+    useEffect(() => {
+        setStartDate(formatUnixTime(props.startDay));
+        setEndDate(formatUnixTime(props.endDay));
+        setDescription(props.text);
+    }, [props.startDay, props.endDay, props.text]);
+
     const isPastDueDate = (date: string) => {
         const timestamp = parseDate(date);
         return timestamp < Date.now();
     };
     
-    // Проверяем, находится ли задача в столбце "Done"
     const isInDoneColumn = props.type === 'done';
 
     const handleEditClick = (e: React.MouseEvent) => {
@@ -48,11 +53,20 @@ const Task = (props: TaskProps) => {
         const startTimestamp = parseDate(startDate);
         const endTimestamp = parseDate(endDate);
 
-        // Проверяем валидность дат
+        // Validate dates
         if (startTimestamp > endTimestamp) {
-            // Возвращаем к исходным значениям
             setStartDate(formatUnixTime(props.startDay));
             setEndDate(formatUnixTime(props.endDay));
+            return;
+        }
+
+        // Update task data
+        if (props.onUpdate) {
+            props.onUpdate(props.id, {
+                startDay: startTimestamp,
+                endDay: endTimestamp,
+                text: description
+            });
         }
 
         setIsEditing(false);
@@ -62,7 +76,6 @@ const Task = (props: TaskProps) => {
     const handleCancel = (e: React.MouseEvent) => {
         e.preventDefault();
         e.stopPropagation();
-        // Возвращаем исходные значения
         setStartDate(formatUnixTime(props.startDay));
         setEndDate(formatUnixTime(props.endDay));
         setDescription(props.text);
